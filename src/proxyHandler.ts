@@ -11,7 +11,7 @@ const isBodylessMethod = (method: string) => ["GET", "HEAD"].includes(method.toU
 export async function proxyHandler(req: Request, res: Response, next: NextFunction) {
 	const requestId = (req as any).requestId || res.locals.requestId;
 	const targetUrl = config.OPEN_API_URL + req.originalUrl;
-
+	console.log("targetUrl", targetUrl);
 	const abortController = new AbortController();
 	const timeout = setTimeout(() => {
 		abortController.abort();
@@ -63,7 +63,11 @@ export async function proxyHandler(req: Request, res: Response, next: NextFuncti
 
 		fetchResponse.headers.forEach((value, key) => {
 			const lower = key.toLowerCase();
-			if (["content-length", "transfer-encoding", "connection", "keep-alive"].includes(lower)) {
+			if (
+				["content-length", "transfer-encoding", "connection", "keep-alive", "content-encoding"].includes(
+					lower
+				)
+			) {
 				return;
 			}
 			res.setHeader(key, value);

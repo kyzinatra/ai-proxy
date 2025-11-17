@@ -6,6 +6,7 @@ const HOP_BY_HOP_HEADERS = [
 	"host",
 	"content-length",
 	"transfer-encoding",
+	"content-encoding",
 	"connection",
 	"keep-alive",
 	"upgrade",
