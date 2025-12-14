@@ -28,14 +28,28 @@ export function normalizeRequestHeaders(req: Request): NormalizedHeadersResult {
 		headers[lowerKey] = Array.isArray(value) ? value.join(", ") : String(value);
 	}
 
-	// Перезаписываем авторизацию на наш ключ
-	headers["authorization"] = `Bearer ${config.OPEN_API_TOKEN}`;
-
 	const requestId = (req as any).requestId;
-	logger.debug("Authorization header overridden", {
+
+	const originalUrl = req.originalUrl || "";
+	const isAnthropic = originalUrl === "/anthropic" || originalUrl.startsWith("/anthropic/");
+	const isOpenAI = originalUrl === "/openai" || originalUrl.startsWith("/openai/");
+
+	if (isAnthropic) {
+		// Anthropic expects `x-api-key` + `anthropic-version`. Do not forward any client Authorization.
+		delete headers["authorization"];
+		headers["x-api-key"] = config.ANTHROPIC_API_TOKEN;
+		headers["anthropic-version"] = headers["anthropic-version"] || "2023-06-01";
+	} else if (isOpenAI) {
+		headers["authorization"] = `Bearer ${config.OPENAI_API_TOKEN}`;
+	} else {
+		headers["authorization"] = `Bearer ${config.OPENAI_API_TOKEN}`;
+	}
+
+	logger.debug("Upstream auth injected", {
 		requestId,
 		method: req.method,
 		url: req.originalUrl,
+		provider: isAnthropic ? "anthropic" : "openai",
 	});
 
 	// Логируем ключевые безопасные заголовки
@@ -45,7 +59,13 @@ export function normalizeRequestHeaders(req: Request): NormalizedHeadersResult {
 		url: req.originalUrl,
 	};
 
-	const important = ["x-request-id", "openai-organization", "user-agent", "x-forwarded-for"];
+	const important = [
+		"x-request-id",
+		"openai-organization",
+		"anthropic-version",
+		"user-agent",
+		"x-forwarded-for",
+	];
 
 	for (const name of important) {
 		const v = headers[name];

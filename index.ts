@@ -78,6 +78,7 @@ app.listen(config.PORT, () => {
 	logger.info("Proxy server started", {
 		port: config.PORT,
 		env: config.NODE_ENV,
-		upstream: config.OPEN_API_URL,
+		upstreamOpenAI: config.OPENAI_API_URL,
+		upstreamAnthropic: config.ANTHROPIC_API_URL,
 	});
 });

@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction, raw } from "express";
 import { config } from "./config.js";
 import logger from "./logger.js";
 import { normalizeRequestHeaders } from "./httpHeaders.js";
@@ -10,8 +10,29 @@ const isBodylessMethod = (method: string) => ["GET", "HEAD"].includes(method.toU
 
 export async function proxyHandler(req: Request, res: Response, next: NextFunction) {
 	const requestId = (req as any).requestId || res.locals.requestId;
-	const targetUrl = config.OPEN_API_URL + req.originalUrl;
-	console.log("targetUrl", targetUrl);
+
+	const originalUrl = req.originalUrl || "";
+	const isAnthropic = originalUrl === "/anthropic" || originalUrl.startsWith("/anthropic/");
+	const isOpenAI = originalUrl === "/openai" || originalUrl.startsWith("/openai/");
+
+	const upstreamBase = isAnthropic ? config.ANTHROPIC_API_URL : config.OPENAI_API_URL;
+
+	// Strip the provider prefix from the upstream path
+	let upstreamPath = originalUrl;
+	if (isAnthropic) upstreamPath = upstreamPath.replace(/^\/anthropic(?=\/|$)/, "");
+	if (isOpenAI) upstreamPath = upstreamPath.replace(/^\/openai(?=\/|$)/, "");
+	if (upstreamPath === "") upstreamPath = "/";
+
+	const targetUrl = upstreamBase + upstreamPath;
+
+	logger.debug("Computed upstream targetUrl", {
+		requestId,
+		method: req.method,
+		url: req.originalUrl,
+		targetUrl,
+		provider: isAnthropic ? "anthropic" : "openai",
+	});
+
 	const abortController = new AbortController();
 	const timeout = setTimeout(() => {
 		abortController.abort();
@@ -32,7 +53,6 @@ export async function proxyHandler(req: Request, res: Response, next: NextFuncti
 			if (rawBody && rawBody.length > 0) {
 				const contentType = req.headers["content-type"];
 				body = rawBody;
-
 				logger.debug("Outgoing request body info", {
 					requestId,
 					method: req.method,
@@ -48,6 +68,13 @@ export async function proxyHandler(req: Request, res: Response, next: NextFuncti
 			method: req.method,
 			url: req.originalUrl,
 			targetUrl,
+		});
+
+		console.log(targetUrl, {
+			method: req.method,
+			headers,
+			body,
+			signal: abortController.signal,
 		});
 
 		const fetchResponse = await fetch(targetUrl, {

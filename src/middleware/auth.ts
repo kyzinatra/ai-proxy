@@ -5,11 +5,9 @@ import logger from "../logger.js";
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
 	const requestId = (req as any).requestId || res.locals.requestId;
 
-	const rawAuth = req.headers["authorization"];
+	const rawAuth = req.headers["authorization"] || req.headers["x-api-key"];
 	const authHeader = Array.isArray(rawAuth) ? rawAuth[0] : rawAuth || "";
-
-	const match = /^Bearer\s+(.+)$/i.exec(authHeader);
-	const clientToken = match?.[1]?.trim();
+	const clientToken = /^Bearer\s+(.+)$/i.exec(authHeader)?.[1]?.trim() || authHeader;
 
 	if (!clientToken) {
 		logger.warn("Missing or invalid Authorization header", {

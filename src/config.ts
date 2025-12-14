@@ -6,8 +6,12 @@ export type NodeEnv = "development" | "production" | "test";
 
 export interface AppConfig {
 	PORT: number;
-	OPEN_API_URL: string;
-	OPEN_API_TOKEN: string;
+	OPENAI_API_URL: string;
+	OPENAI_API_TOKEN: string;
+
+	ANTHROPIC_API_URL: string;
+	ANTHROPIC_API_TOKEN: string;
+
 	NODE_ENV: NodeEnv;
 	FETCH_TIMEOUT_MS: number;
 	ALLOWED_TOKENS: string[];
@@ -27,24 +31,38 @@ const parseNumber = (value: string | undefined, fallback: number): number => {
 	return Number.isFinite(n) && n > 0 ? n : fallback;
 };
 
-const validateUrl = (value: string | undefined, fallback: string): string => {
+const validateUrl = (name: string, value: string | undefined, fallback: string): string => {
 	const url = value || fallback;
 	try {
 		// eslint-disable-next-line no-new
 		new URL(url);
 		return url;
 	} catch {
-		throw new Error(`Invalid OPEN_API_URL: ${url}`);
+		throw new Error(`Invalid ${name}: ${url}`);
 	}
 };
 
 export const config: AppConfig = (() => {
 	const NODE_ENV = parseNodeEnv(process.env.NODE_ENV);
 	const PORT = parseNumber(process.env.PORT, 3000);
-	const OPEN_API_URL = validateUrl(process.env.OPEN_API_URL, "https://api.openai.com/v1");
-	const OPEN_API_TOKEN = process.env.OPEN_API_TOKEN;
-	if (!OPEN_API_TOKEN) {
-		throw new Error("OPEN_API_TOKEN is required but not provided");
+	const OPENAI_API_URL = validateUrl(
+		"OPENAI_API_URL",
+		process.env.OPENAI_API_URL,
+		"https://api.openai.com/v1"
+	);
+	const OPENAI_API_TOKEN = process.env.OPENAI_API_TOKEN;
+	if (!OPENAI_API_TOKEN) {
+		throw new Error("OPENAI_API_TOKEN is required but not provided");
+	}
+
+	const ANTHROPIC_API_URL = validateUrl(
+		"ANTHROPIC_API_URL",
+		process.env.ANTHROPIC_API_URL,
+		"https://api.anthropic.com/v1"
+	);
+	const ANTHROPIC_API_TOKEN = process.env.ANTHROPIC_API_TOKEN;
+	if (!ANTHROPIC_API_TOKEN) {
+		throw new Error("ANTHROPIC_API_TOKEN is required but not provided");
 	}
 
 	const FETCH_TIMEOUT_MS = parseNumber(process.env.FETCH_TIMEOUT_MS, 240_000);
@@ -58,8 +76,10 @@ export const config: AppConfig = (() => {
 
 	return {
 		PORT,
-		OPEN_API_URL,
-		OPEN_API_TOKEN,
+		OPENAI_API_URL,
+		OPENAI_API_TOKEN,
+		ANTHROPIC_API_URL,
+		ANTHROPIC_API_TOKEN,
 		NODE_ENV,
 		FETCH_TIMEOUT_MS,
 		ALLOWED_TOKENS,
