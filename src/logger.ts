@@ -22,7 +22,7 @@ if (config.NODE_ENV === "production") {
 		new transports.File({
 			filename: "logs/app.log",
 			level: "info",
-			maxsize: 100 * 1024 * 1024, // 100MB
+			maxsize: 150 * 1024 * 1024, // 100MB
 			maxFiles: 5,
 		})
 	);

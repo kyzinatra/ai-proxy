@@ -70,13 +70,6 @@ export async function proxyHandler(req: Request, res: Response, next: NextFuncti
 			targetUrl,
 		});
 
-		console.log(targetUrl, {
-			method: req.method,
-			headers,
-			body,
-			signal: abortController.signal,
-		});
-
 		const fetchResponse = await fetch(targetUrl, {
 			method: req.method,
 			headers,
